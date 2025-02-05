@@ -1,7 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { FaHome, FaTasks, FaCog, FaUsers } from 'react-icons/fa';
 
 export default function Sidebar({ setActiveSection }: { setActiveSection: (section: string) => void }) {
+  const [activeSection, setActive] = useState("Dashboard");
+
+  const handleSectionClick = (section: string) => {
+    setActive(section);
+    setActiveSection(section);
+  };
+
   const menuItems = [
     { label: 'Dashboard', icon: <FaHome /> },
     { label: 'View Tasks', icon: <FaTasks /> },
@@ -16,8 +23,9 @@ export default function Sidebar({ setActiveSection }: { setActiveSection: (secti
         {menuItems.map((item) => (
           <div
             key={item.label}
-            onClick={() => setActiveSection(item.label)}
-            className="flex items-center gap-3 p-2 rounded-lg hover:bg-blue-100 hover:text-black cursor-pointer transition"
+            onClick={() => handleSectionClick(item.label)}
+            className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition 
+            ${activeSection === item.label ? "bg-blue-500 text-white" : "hover:bg-blue-100 hover:text-black"}`}
           >
             {item.icon}
             <span>{item.label}</span>
