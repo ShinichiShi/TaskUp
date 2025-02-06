@@ -1,7 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
-import { MdDelete } from "react-icons/md";
+import { MdDelete, MdSave } from "react-icons/md";
 import { IoMdAdd } from "react-icons/io";
-import Image from "next/image";
 import {
   Dialog,
   DialogContent,
@@ -29,6 +28,7 @@ interface NewTask {
 export default function ViewTasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [newTask, setNewTask] = useState<NewTask>({
     title: "",
@@ -36,20 +36,22 @@ export default function ViewTasks() {
     description: "",
     image: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  // const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const fetchTasks = useCallback(async () => {
     try {
       const res = await fetch("/api/tasks");
       if (!res.ok) throw new Error("Failed to fetch tasks");
-  
+
       const data = await res.json();
-  
+
       if (!Array.isArray(data)) throw new Error("Invalid response format");
       const tasksWithStringId = data.map((task: Task) => ({
         ...task,
-        _id: task._id.toString(), 
+        _id: task._id.toString(),
       }));
-  
+
       setTasks(tasksWithStringId);
       if (tasksWithStringId.length > 0 && !selectedTask) {
         setSelectedTask(tasksWithStringId[0]);
@@ -62,16 +64,80 @@ export default function ViewTasks() {
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]); 
+  }, [fetchTasks]);
+
+  const saveTaskChanges = async () => {
+    if (!editedTask) return;
+
+    try {
+      const response = await fetch(`/api/tasks/${editedTask._id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editedTask),
+      });
+
+      if (!response.ok) throw new Error("Failed to update task");
+
+      setTasks((prev) =>
+        prev.map((task) => 
+          task._id === editedTask._id ? editedTask : task
+        )
+      );
+      setSelectedTask(editedTask);
+      setEditedTask(null);
+    } catch (error) {
+      console.error("Error saving task changes:", error);
+    }
+  };
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit
+        alert("File size must be less than 5MB");
+        return;
+      }
+
+      setSelectedFile(file);
+      // const fileUrl = URL.createObjectURL(file);
+      // setPreviewUrl(fileUrl);
+    }
+  };
 
   const addTask = async () => {
     try {
+      let uploadedImageUrl = newTask.image;
+
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("image", selectedFile);
+
+        const uploadResponse = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        if (!uploadResponse.ok) {
+          throw new Error("Upload failed");
+        }
+
+        const result = await uploadResponse.json();
+        uploadedImageUrl = result.imageUrl;
+      }
+
+      const taskToSubmit = {
+        ...newTask,
+        image: uploadedImageUrl,
+      };
+
       const response = await fetch("/api/tasks", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(newTask),
+        body: JSON.stringify(taskToSubmit),
       });
 
       if (!response.ok) throw new Error("Failed to add task");
@@ -83,7 +149,8 @@ export default function ViewTasks() {
         description: "",
         image: "",
       });
-
+      setSelectedFile(null);
+      // setPreviewUrl("");
     } catch (error) {
       console.error("Error adding task:", error);
     }
@@ -93,20 +160,26 @@ export default function ViewTasks() {
     await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
     await fetchTasks(); 
     setSelectedTask(null);
-  };
-
-  const updateTaskDetails = async (field: keyof Task, value: string) => {
+  }; 
+  const updateTaskImage = async (file: File) => {
     if (!selectedTask) return;
 
-    const updatedTask = { ...selectedTask, [field]: value };
-    setSelectedTask(updatedTask);
-    setTasks((prev) =>
-      prev.map((task) =>
-        task._id === selectedTask._id ? updatedTask : task
-      )
-    );
-
     try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const uploadResponse = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const result = await uploadResponse.json();
+      const updatedTask = { ...selectedTask, image: result.imageUrl };
+
       await fetch(`/api/tasks/${selectedTask._id}`, {
         method: "PUT",
         headers: {
@@ -114,11 +187,15 @@ export default function ViewTasks() {
         },
         body: JSON.stringify(updatedTask),
       });
+
+      setSelectedTask(updatedTask);
+      setTasks((prev) =>
+        prev.map((task) => (task._id === selectedTask._id ? updatedTask : task))
+      );
     } catch (error) {
-      console.error("Error updating task:", error);
+      console.error("Error updating task image:", error);
     }
   };
-
   return (
     <div className="flex p-6 bg-gray-100 h-full text-black gap-6">
       <div className="w-1/3">
@@ -138,7 +215,9 @@ export default function ViewTasks() {
               <li
                 key={task._id}
                 className={`flex justify-between bg-white p-3 rounded-md shadow-md cursor-pointer hover:bg-gray-200 ${
-                  selectedTask?._id === task._id ? "border-2 border-blue-500" : ""
+                  selectedTask?._id === task._id
+                    ? "border-2 border-blue-500"
+                    : ""
                 }`}
                 onClick={() => setSelectedTask(task)}
               >
@@ -169,20 +248,42 @@ export default function ViewTasks() {
             </div>
           ) : (
             <>
-              <h2 className="text-xl font-semibold mb-4">Task Details</h2>
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-semibold">Task Details</h2>
+                {editedTask && (
+                  <Button 
+                    onClick={saveTaskChanges}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white flex items-center"
+                  >
+                    <MdSave className="mr-2" /> Save Changes
+                  </Button>
+                )}
+              </div>
 
               <label className="block text-sm font-medium">Title</label>
               <input
                 type="text"
-                value={selectedTask?.title || ""}
-                onChange={(e) => updateTaskDetails("title", e.target.value)}
+                value={editedTask?.title || selectedTask?.title || ""}
+                onChange={(e) => {
+                  const updatedTask = {
+                    ...(editedTask || selectedTask),
+                    title: e.target.value
+                  };
+                  setEditedTask(updatedTask as Task);
+                }}
                 className="w-full p-2 border rounded-md mb-3"
               />
 
               <label className="block text-sm font-medium">Status</label>
               <select
-                value={selectedTask?.status || ""}
-                onChange={(e) => updateTaskDetails("status", e.target.value)}
+                value={editedTask?.status || selectedTask?.status || ""}
+                onChange={(e) => {
+                  const updatedTask = {
+                    ...(editedTask || selectedTask),
+                    status: e.target.value as Task['status']
+                  };
+                  setEditedTask(updatedTask as Task);
+                }}
                 className="w-full p-2 border rounded-md mb-3"
               >
                 <option value="Backlog">Backlog</option>
@@ -192,35 +293,33 @@ export default function ViewTasks() {
 
               <label className="block text-sm font-medium">Description</label>
               <textarea
-                value={selectedTask?.description || ""}
-                onChange={(e) => updateTaskDetails("description", e.target.value)}
+                value={editedTask?.description || selectedTask?.description || ""}
+                onChange={(e) => {
+                  const updatedTask = {
+                    ...(editedTask || selectedTask),
+                    description: e.target.value
+                  };
+                  setEditedTask(updatedTask as Task);
+                }}
                 className="w-full p-2 border rounded-md mb-3"
                 rows={4}
               />
 
-              <label className="block text-sm font-medium">Task Image</label>
+              <label className="block text-sm font-medium">Task Isdsd   mage</label>
               <input
-                type="text"
-                value={selectedTask?.image || ""}
-                onChange={(e) => updateTaskDetails("image", e.target.value)}
-                placeholder="Paste image URL here..."
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) updateTaskImage(file);
+                }}
                 className="w-full p-2 border rounded-md mb-3"
               />
-
-              {selectedTask?.image && (
-                <Image
-                  src={selectedTask.image}
-                  alt="Task"
-                  height={24}
-                  width={24}
-                  className="w-full rounded-md"
-                />
-              )}
             </>
+            
           )}
         </div>
       )}
-
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -270,14 +369,11 @@ export default function ViewTasks() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Task Image URL</label>
+              <label className="text-sm font-medium">Task Image</label>
               <input
-                type="text"
-                value={newTask.image}
-                onChange={(e) =>
-                  setNewTask((prev) => ({ ...prev, image: e.target.value }))
-                }
-                placeholder="Paste image URL here..."
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
                 className="w-full p-2 border rounded-md"
               />
             </div>
@@ -290,7 +386,10 @@ export default function ViewTasks() {
             >
               Cancel
             </Button>
-            <Button onClick={addTask} className="bg-green-500 hover:bg-green-600">
+            <Button
+              onClick={addTask}
+              className="bg-green-500 hover:bg-green-600"
+            >
               Save Task
             </Button>
           </DialogFooter>

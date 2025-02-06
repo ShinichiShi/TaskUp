@@ -6,6 +6,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "**.freepik.com", 
       },
+      {
+        protocol: "https",
+        hostname: "**.cloudinary.com", 
+      },
     ],
   },
 };
