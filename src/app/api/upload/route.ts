@@ -27,19 +27,21 @@ export async function POST(req: Request) {
     const base64Image = buffer.toString('base64');
 
     // Upload to Cloudinary
-    const uploadResponse = await new Promise<any>((resolve, reject) => {
-      cloudinary.uploader.upload(
-        `data:${file.type};base64,${base64Image}`,
-        {
-          folder: 'imgs', // Optional: organize uploads
-          resource_type: 'auto',
-        },
-        (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
-        }
-      );
-    });
+    const uploadResponse: { secure_url: string; public_id: string } = await new Promise(
+      (resolve, reject) => {
+        cloudinary.uploader.upload(
+          `data:${file.type};base64,${base64Image}`,
+          {
+            folder: "imgs",
+            resource_type: "auto",
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result as { secure_url: string; public_id: string });
+          }
+        );
+      }
+    );
 
     // Save image link to MongoDB
     const image = await Image.create({
