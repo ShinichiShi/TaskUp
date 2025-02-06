@@ -3,7 +3,7 @@
 
 ### Clone the repository:
 ```bash
-git clone https://github.com/yourusername/TaskUp.git
+git clone https://github.com/ShinichiShi/TaskUp.git
 cd TaskUp
 
 npm install
