@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
-import { RingLoader } from "react-spinners";  
+import { RingLoader } from "react-spinners";
+import {  toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 interface UserData {
   name: string;
@@ -44,9 +46,7 @@ export default function Settings() {
         
         const createRes = await fetch('/api/user', {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(initialUserData),
         });
 
@@ -54,13 +54,13 @@ export default function Settings() {
           const newUser = await createRes.json();
           setUser(newUser);
           setPreviewUrl(newUser.profilePic);
+          toast.success("Profile created successfully");
         } else {
           throw new Error('Failed to create user');
         }
       }
     } catch (error) {
-      console.error("Error fetching/creating user data:", error);
-      alert("An error occurred while setting up your profile.");
+      toast.error("Failed to setup profile"+error);
     } finally {
       setIsLoading(false);
     }
@@ -77,8 +77,8 @@ export default function Settings() {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
-      if (file.size > 5 * 1024 * 1024) { // 5MB limit
-        alert("File size must be less than 5MB");
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
         return;
       }
       
@@ -91,6 +91,7 @@ export default function Settings() {
   const handleChange = (field: keyof UserData, value: string) => {
     setUser((prev) => ({ ...prev, [field]: value }));
   };
+
   const handleSaveChanges = async () => {
     try {
       let updatedProfilePic = user.profilePic;
@@ -112,16 +113,11 @@ export default function Settings() {
         updatedProfilePic = result.imageUrl;
       }
   
-      const updatedUser = {
-        ...user,
-        profilePic: updatedProfilePic,
-      };
+      const updatedUser = { ...user, profilePic: updatedProfilePic };
   
       const res = await fetch(`/api/user/${user.clerkId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedUser),
       });
   
@@ -129,14 +125,13 @@ export default function Settings() {
         const savedUser = await res.json();
         setUser(savedUser);
         setSelectedFile(null);
-        alert("Changes saved successfully!");
+        toast.success("Changes saved successfully!");
       } else {
         const data = await res.json();
-        alert(data.message || "Failed to save changes");
+        throw new Error(data.message || "Failed to save changes");
       }
     } catch (error) {
-      console.error("Error saving changes:", error);
-      alert("An error occurred while saving changes.");
+      toast.error(error instanceof Error ? error.message : "Failed to save changes");
     }
   };
   return (
@@ -146,7 +141,7 @@ export default function Settings() {
         <div className="flex justify-center items-center h-96">
           <RingLoader color="#0000ff" size={60} />
         </div>
-      ) : (<div className="p-6 bg-gray-100 text-black max-w-6xl mx-auto flex flex-col md:flex-row justify-between">
+      ) : (<div className="p-6 bg-gray-100 text-black max-w-6xl mx-auto rounded-xl flex flex-col md:flex-row justify-between">
           <div className="flex-shrink-0 text-center mb-4 md:mb-0">
             <div className="relative w-32 h-32 mx-auto mb-4">
               <Image

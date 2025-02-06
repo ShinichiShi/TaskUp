@@ -23,7 +23,7 @@ export default function Sidebar({ setActiveSection }: { setActiveSection: (secti
         <FaBars />
       </button>
 
-      <div className={`fixed md:relative top-0 left-0 w-64 bg-white shadow-md h-full transition-transform transform ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
+      <div className={`fixed md:relative top-0 left-0 w-64 bg-slate-800 text-white shadow-md h-full transition-transform transform ${isOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}>
         <h2 className="text-xl font-semibold p-4">Task Manager</h2>
         <nav className="flex flex-col gap-4 p-4">
           {menuItems.map((item) => (

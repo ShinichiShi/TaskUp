@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+// Task type with dueDate as a string
 type Task = {
   id: string;
   title: string;
+  date: string;
 };
 
 type Status = "Backlog" | "Ongoing" | "Completed";
@@ -29,10 +32,14 @@ function TaskColumn({
     return "Backlog";
   };
 
+  
   const handleMove = async (task: Task) => {
     setMovingTaskId(task.id);
     try {
       await moveTask(task, status, getNextStatus(status));
+      toast.success(`Task moved to ${getNextStatus(status)}`);
+    } catch (error) {
+      toast.error("Failed to move task"+error);
     } finally {
       setMovingTaskId(null);
     }
@@ -40,7 +47,7 @@ function TaskColumn({
 
   return (
     <div className="w-full md:w-1/3 bg-gray-100 p-4 text-black rounded-lg shadow-md min-h-[100px]">
-      <h2 className="text-lg font-semibold mb-3 text-center">{status.toUpperCase()}</h2>
+      <h2 className={`text-lg font-semibold mb-3 text-center rounded-full border ${status == 'Backlog' ? "border-red-700 bg-red-200" : status == "Ongoing" ? "border-blue-700 bg-blue-200" : "bg-yellow-200 border-yellow-500"}`}>{status.toUpperCase()}</h2>
       <div className="flex flex-col gap-2">
         {isLoading ? (
           <div className="animate-pulse space-y-2">
@@ -52,11 +59,16 @@ function TaskColumn({
           <div className="text-center text-gray-500 py-4">No tasks</div>
         ) : (
           tasks.map((task) => (
-            <div 
-              key={task.id} 
+            <div
+              key={task.id}
               className="p-3 bg-white rounded-md shadow hover:shadow-lg transition-shadow flex justify-between items-center"
             >
-              <span className="font-medium">{task.title}</span>
+              <div>
+                <span className="font-medium">{task.title}</span>
+                <span className="text-gray-500 text-sm ml-2">
+                  Due: {task.date}
+                </span>
+              </div>
               <button
                 onClick={() => handleMove(task)}
                 disabled={movingTaskId === task.id}
@@ -87,7 +99,6 @@ function TaskColumn({
     </div>
   );
 }
-
 export default function Dashboard() {
   const [tasks, setTasks] = useState<Tasks>({
     Backlog: [],
@@ -117,22 +128,27 @@ export default function Dashboard() {
         };
 
         data.forEach((task) => {
-          if (
-            task &&
-            typeof task.title === "string" &&
-            typeof task._id === "string" &&
-            ["Backlog", "Ongoing", "Completed"].includes(task.status)
-          ) {
+          if (task && typeof task.title === "string" && 
+              typeof task._id === "string" && 
+              ["Backlog", "Ongoing", "Completed"].includes(task.status)) {
             formattedTasks[task.status as Status].push({
               id: task._id,
               title: task.title,
+              date: new Date(task.dueDate).toLocaleDateString("en-US", {
+                weekday: "short",
+                year: "numeric",
+                month: "short",
+                day: "numeric",
+              }),
             });
           }
         });
 
         setTasks(formattedTasks);
       } catch (error) {
-        setError(error instanceof Error ? error.message : "An error occurred");
+        const message = error instanceof Error ? error.message : "An error occurred";
+        setError(message);
+        toast.error(message);
       } finally {
         setIsLoading(false);
       }
@@ -149,9 +165,7 @@ export default function Dashboard() {
         body: JSON.stringify({ status: to }),
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to update task");
-      }
+      if (!response.ok) throw new Error("Failed to update task");
 
       setTasks((prev) => {
         const newTasks = { ...prev };
@@ -160,8 +174,11 @@ export default function Dashboard() {
         return newTasks;
       });
     } catch (error) {
-      setError(error instanceof Error ? error.message : "Failed to move task");
+      const message = error instanceof Error ? error.message : "Failed to move task";
+      setError(message);
+      toast.error(message);
       setTasks((prev) => ({ ...prev }));
+      throw error;
     }
   };
 

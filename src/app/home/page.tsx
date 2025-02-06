@@ -26,7 +26,7 @@ export default function TaskForm() {
       <Navbar />
       <div className="w-full flex h-[100vh]">
         <Sidebar setActiveSection={setActiveSection} />
-        <div className="flex-grow p-4 bg-slate-400 rounded-lg shadow-md">
+        <div className="flex-grow p-4 rounded-lg bg-slate-400 shadow-md">
           {renderContent()}
         </div>
       </div>

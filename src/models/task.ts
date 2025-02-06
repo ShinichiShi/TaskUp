@@ -6,6 +6,7 @@ const TaskSchema = new Schema({
   description: { type: String },
   image: { type: String },
   userId: { type: String, required: true,  index: true,  }, 
+  dueDate: { type: Date },
 }, { timestamps: true });
 
 export const Task = models.Task || model("Task", TaskSchema);

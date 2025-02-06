@@ -1,6 +1,8 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { MdDelete, MdSave } from "react-icons/md";
 import { IoMdAdd } from "react-icons/io";
+import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +17,7 @@ interface Task {
   title: string;
   status: "Backlog" | "Ongoing" | "Completed";
   description: string;
+  dueDate: string;
   image?: string;
 }
 
@@ -22,6 +25,7 @@ interface NewTask {
   title: string;
   status: "Backlog" | "Ongoing" | "Completed";
   description: string;
+  dueDate: string;
   image?: string;
 }
 
@@ -35,9 +39,9 @@ export default function ViewTasks() {
     status: "Backlog",
     description: "",
     image: "",
+    dueDate: new Date().toISOString().split('T')[0],
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  // const [previewUrl, setPreviewUrl] = useState<string>("");
 
   const fetchTasks = useCallback(async () => {
     try {
@@ -45,8 +49,8 @@ export default function ViewTasks() {
       if (!res.ok) throw new Error("Failed to fetch tasks");
 
       const data = await res.json();
-
       if (!Array.isArray(data)) throw new Error("Invalid response format");
+      
       const tasksWithStringId = data.map((task: Task) => ({
         ...task,
         _id: task._id.toString(),
@@ -57,7 +61,7 @@ export default function ViewTasks() {
         setSelectedTask(tasksWithStringId[0]);
       }
     } catch (error) {
-      console.error("Error fetching tasks:", error);
+      toast.error("Failed to fetch tasks"+error);
       setTasks([]);
     }
   }, [selectedTask]);
@@ -72,21 +76,18 @@ export default function ViewTasks() {
     try {
       const response = await fetch(`/api/tasks/${editedTask._id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(editedTask),
       });
 
       if (!response.ok) throw new Error("Failed to update task");
 
-      setTasks((prev) =>
-        prev.map((task) => 
-          task._id === editedTask._id ? editedTask : task
-        )
+      setTasks(prev =>
+        prev.map(task => (task._id === editedTask._id ? editedTask : task))
       );
       setSelectedTask(editedTask);
       setEditedTask(null);
+      toast.success("Task updated successfully!");
     } catch (error) {
       console.error("Error saving task changes:", error);
     }
@@ -119,9 +120,7 @@ export default function ViewTasks() {
           body: formData,
         });
 
-        if (!uploadResponse.ok) {
-          throw new Error("Upload failed");
-        }
+        if (!uploadResponse.ok) throw new Error("Upload failed");
 
         const result = await uploadResponse.json();
         uploadedImageUrl = result.imageUrl;
@@ -130,17 +129,17 @@ export default function ViewTasks() {
       const taskToSubmit = {
         ...newTask,
         image: uploadedImageUrl,
+        dueDate: new Date(newTask.dueDate).toISOString().split('T')[0],
       };
 
       const response = await fetch("/api/tasks", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(taskToSubmit),
       });
 
       if (!response.ok) throw new Error("Failed to add task");
+      
       await fetchTasks();
       setIsAddModalOpen(false);
       setNewTask({
@@ -148,19 +147,28 @@ export default function ViewTasks() {
         status: "Backlog",
         description: "",
         image: "",
+        dueDate: new Date().toISOString().split('T')[0],
       });
       setSelectedFile(null);
-      // setPreviewUrl("");
+      toast.success("Task added successfully!");
     } catch (error) {
-      console.error("Error adding task:", error);
+      toast.error("Failed to add task"+error);
     }
   };
 
   const deleteTask = async (taskId: string) => {
-    await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
-    await fetchTasks(); 
-    setSelectedTask(null);
-  }; 
+    try {
+      const response = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+      if (!response.ok) throw new Error("Failed to delete task");
+      
+      await fetchTasks();
+      setSelectedTask(null);
+      toast.success("Task deleted successfully!");
+    } catch (error) {
+      toast.error("Failed to delete task"+error);
+    }
+  };
+
   const updateTaskImage = async (file: File) => {
     if (!selectedTask) return;
 
@@ -173,27 +181,26 @@ export default function ViewTasks() {
         body: formData,
       });
 
-      if (!uploadResponse.ok) {
-        throw new Error("Upload failed");
-      }
+      if (!uploadResponse.ok) throw new Error("Upload failed");
 
       const result = await uploadResponse.json();
       const updatedTask = { ...selectedTask, image: result.imageUrl };
 
-      await fetch(`/api/tasks/${selectedTask._id}`, {
+      const response = await fetch(`/api/tasks/${selectedTask._id}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedTask),
       });
 
+      if (!response.ok) throw new Error("Failed to update task image");
+
       setSelectedTask(updatedTask);
-      setTasks((prev) =>
-        prev.map((task) => (task._id === selectedTask._id ? updatedTask : task))
+      setTasks(prev =>
+        prev.map(task => (task._id === selectedTask._id ? updatedTask : task))
       );
+      toast.success("Task image updated successfully!");
     } catch (error) {
-      console.error("Error updating task image:", error);
+      toast.error("Failed to update task image"+error);
     }
   };
   return (
@@ -208,18 +215,25 @@ export default function ViewTasks() {
             <IoMdAdd />
           </Button>
         </div>
-  
+
         <ul className="space-y-2">
           {tasks?.length > 0 ? (
             tasks.map((task) => (
               <li
                 key={task._id}
                 className={`flex justify-between bg-white p-3 rounded-md shadow-md cursor-pointer hover:bg-gray-200 ${
-                  selectedTask?._id === task._id ? "border-2 border-blue-500" : ""
+                  selectedTask?._id === task._id
+                    ? "border-2 border-blue-500"
+                    : ""
                 }`}
                 onClick={() => setSelectedTask(task)}
               >
                 <span>{task.title}</span>
+                {task.dueDate && (
+                  <span className="text-gray-500 text-sm ml-2">
+                    Due: {new Date(task.dueDate).toLocaleDateString()}
+                  </span>
+                )}
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
@@ -236,9 +250,9 @@ export default function ViewTasks() {
           )}
         </ul>
       </div>
-  
+
       {(selectedTask || tasks.length === 0) && (
-        <div className="flex-grow p-4 bg-white rounded-md shadow-md">
+        <div className="flex-grow p-4 bg-slate-300 rounded-md shadow-md">
           {tasks.length === 0 ? (
             <div className="text-center text-gray-500">
               <h2 className="text-xl font-semibold mb-4">No Tasks</h2>
@@ -257,7 +271,7 @@ export default function ViewTasks() {
                   </Button>
                 )}
               </div>
-  
+
               <label className="block text-sm font-medium">Title</label>
               <input
                 type="text"
@@ -271,7 +285,7 @@ export default function ViewTasks() {
                 }}
                 className="w-full p-2 border rounded-md mb-3"
               />
-  
+
               <label className="block text-sm font-medium">Status</label>
               <select
                 value={editedTask?.status || selectedTask?.status || ""}
@@ -288,10 +302,12 @@ export default function ViewTasks() {
                 <option value="Ongoing">Ongoing</option>
                 <option value="Completed">Completed</option>
               </select>
-  
+
               <label className="block text-sm font-medium">Description</label>
               <textarea
-                value={editedTask?.description || selectedTask?.description || ""}
+                value={
+                  editedTask?.description || selectedTask?.description || ""
+                }
                 onChange={(e) => {
                   const updatedTask = {
                     ...(editedTask || selectedTask),
@@ -302,7 +318,19 @@ export default function ViewTasks() {
                 className="w-full p-2 border rounded-md mb-3"
                 rows={4}
               />
-  
+              <label className="block text-sm font-medium">Due Date</label>
+              <input
+                type="date"
+                value={editedTask?.dueDate || selectedTask?.dueDate || ""}
+                onChange={(e) => {
+                  const updatedTask = {
+                    ...(editedTask || selectedTask),
+                    dueDate: e.target.value,
+                  };
+                  setEditedTask(updatedTask as Task);
+                }}
+                className="w-full p-2 border rounded-md mb-3"
+              />
               <label className="block text-sm font-medium">Task Image</label>
               <input
                 type="file"
@@ -317,7 +345,7 @@ export default function ViewTasks() {
           )}
         </div>
       )}
-      
+
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -367,6 +395,17 @@ export default function ViewTasks() {
               />
             </div>
             <div className="space-y-2">
+              <label className="text-sm font-medium">Due Date</label>
+              <input
+                type="date"
+                value={newTask.dueDate}
+                onChange={(e) =>
+                  setNewTask((prev) => ({ ...prev, dueDate: e.target.value }))
+                }
+                className="w-full p-2 border rounded-md"
+              />
+            </div>
+            <div className="space-y-2">
               <label className="text-sm font-medium">Task Image</label>
               <input
                 type="file"
@@ -395,4 +434,4 @@ export default function ViewTasks() {
       </Dialog>
     </div>
   );
-}  
+}
