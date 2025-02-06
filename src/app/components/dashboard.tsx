@@ -161,7 +161,6 @@ export default function Dashboard() {
       });
     } catch (error) {
       setError(error instanceof Error ? error.message : "Failed to move task");
-      // Revert the optimistic update
       setTasks((prev) => ({ ...prev }));
     }
   };

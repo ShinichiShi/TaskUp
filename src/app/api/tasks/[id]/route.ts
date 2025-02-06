@@ -1,18 +1,21 @@
-import { NextRequest, NextResponse } from "next/server";
+import {  NextResponse } from "next/server";
 import { dbconnect } from "@/lib/db";
 import { Task } from "@/models/task";
 import { auth } from "@clerk/nextjs/server";
-export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
-  const { params } = context;  
 
+export async function DELETE(
+  request: Request,
+  { params }: { params:  Promise<{ id: string }> }
+) {
   await dbconnect();
+  const {id} = await params;
   const { userId } = await auth();
   if (!userId) {
     return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
   try {
-    const task = await Task.findOneAndDelete({ _id: params.id, userId });
+    const task = await Task.findOneAndDelete({ _id: id, userId });
 
     if (!task) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
@@ -24,10 +27,8 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
-
-export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
-  const { params } = context; 
-  const { id } = params;
+export async function PATCH(req: Request, {params}: { params: Promise<{ id: string }>}) {
+  const { id } = await params;
 
   await dbconnect();
   const { userId } = await auth();
