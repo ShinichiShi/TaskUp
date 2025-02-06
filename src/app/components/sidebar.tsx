@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { FaHome, FaTasks, FaCog, FaUsers } from 'react-icons/fa';
+import { FaHome, FaTasks, FaCog } from 'react-icons/fa';
 
 export default function Sidebar({ setActiveSection }: { setActiveSection: (section: string) => void }) {
   const [activeSection, setActive] = useState("Dashboard");
@@ -12,7 +12,6 @@ export default function Sidebar({ setActiveSection }: { setActiveSection: (secti
   const menuItems = [
     { label: 'Dashboard', icon: <FaHome /> },
     { label: 'View Tasks', icon: <FaTasks /> },
-    { label: 'Team', icon: <FaUsers /> },
     { label: 'Settings', icon: <FaCog /> },
   ];
 

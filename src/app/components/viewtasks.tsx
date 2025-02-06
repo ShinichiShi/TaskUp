@@ -41,24 +41,28 @@ export default function ViewTasks() {
     try {
       const res = await fetch("/api/tasks");
       if (!res.ok) throw new Error("Failed to fetch tasks");
-
+  
       const data = await res.json();
+  
       if (!Array.isArray(data)) throw new Error("Invalid response format");
-
-      setTasks(data);
-      // Set the first task as selected if there's no selected task
-      if (data.length > 0 && !selectedTask) {
-        setSelectedTask(data[0]);
+      const tasksWithStringId = data.map((task: Task) => ({
+        ...task,
+        _id: task._id.toString(), 
+      }));
+  
+      setTasks(tasksWithStringId);
+      if (tasksWithStringId.length > 0 && !selectedTask) {
+        setSelectedTask(tasksWithStringId[0]);
       }
     } catch (error) {
       console.error("Error fetching tasks:", error);
       setTasks([]);
     }
-  },[selectedTask]);
+  }, [selectedTask]);
 
   useEffect(() => {
     fetchTasks();
-  }, [fetchTasks]); // Initial fetch
+  }, [fetchTasks]); 
 
   const addTask = async () => {
     try {

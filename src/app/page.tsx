@@ -5,7 +5,6 @@ import Sidebar from './components/sidebar';
 import ViewTasks from './components/viewtasks';
 import Dashboard from './components/dashboard';
 import Settings from './components/settings';
-import TeamCalendar from './components/team';
 export default function TaskForm() {
   const [activeSection, setActiveSection] = useState('Dashboard');
 
@@ -15,8 +14,6 @@ export default function TaskForm() {
         return <Dashboard/>;
       case 'View Tasks':
         return <ViewTasks/>
-      case 'Team':
-        return <TeamCalendar/>
       case 'Settings':
         return <Settings/>
       default:

@@ -6,11 +6,32 @@ export default function Settings() {
     name: "John Doe",
     email: "johndoe@example.com",
     phone: "+1234567890",
-    profilePic: "https://via.placeholder.com/150",
+    profilePic: "https://img.freepik.com/free-vector/blue-circle-with-white-user_78370-4707.jpg?t=st=1738829048~exp=1738832648~hmac=758c25f3b8fb17a0b74e149a7d9110c66173f510b3b57ba280dcd8b234799113&w=826",
   });
 
   const handleChange = (field: keyof typeof user, value: string) => {
     setUser((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      const res = await fetch("/api/settings", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(user),
+      });
+
+      if (res.ok) {
+        alert("Changes saved successfully!");
+      } else {
+        const data = await res.json();
+        alert(data.message || "Failed to save changes");
+      }
+    } catch (error) {
+      alert("An error occurred while saving changes"+error);
+    }
   };
 
   return (
@@ -67,7 +88,10 @@ export default function Settings() {
             />
           </div>
 
-          <button className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600">
+          <button
+            onClick={handleSaveChanges}
+            className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+          >
             Save Changes
           </button>
         </div>

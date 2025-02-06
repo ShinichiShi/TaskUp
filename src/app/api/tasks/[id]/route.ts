@@ -1,34 +1,47 @@
 import { NextRequest, NextResponse } from "next/server";
 import { dbconnect } from "@/lib/db";
 import { Task } from "@/models/task";
+import { auth } from "@clerk/nextjs/server";
+export async function DELETE(req: NextRequest, context: { params: { id: string } }) {
+  const { params } = context;  
 
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
-  const { id } = await params; 
   await dbconnect();
+  const { userId } = await auth();
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
   try {
-    const task = await Task.findByIdAndDelete(id);
-    
+    const task = await Task.findOneAndDelete({ _id: params.id, userId });
+
     if (!task) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
     }
 
-    return NextResponse.json({ message: "Task deleted" }, { status: 200 });
+    return NextResponse.json({ message: "Task deleted successfully" }, { status: 200 });
   } catch (error) {
     console.error("Error deleting task:", error);
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+
+export async function PATCH(req: NextRequest, context: { params: { id: string } }) {
+  const { params } = context; 
+  const { id } = params;
+
   await dbconnect();
-  
-  const { id } = await params;
-  const updates = await req.json(); 
+  const { userId } = await auth();
+  if (!userId) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+  const updates = await req.json();
 
   try {
-    const updatedTask = await Task.findByIdAndUpdate(id, updates, { 
-      new: true, 
-      runValidators: true, 
-    });
+    const updatedTask = await Task.findOneAndUpdate(
+      { _id: id, userId }, 
+      updates,
+      { new: true }
+    );
 
     if (!updatedTask) {
       return NextResponse.json({ message: "Task not found" }, { status: 404 });
