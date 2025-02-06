@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useUser } from "@clerk/nextjs";
+import { RingLoader } from "react-spinners";  
 
 interface UserData {
   name: string;
@@ -141,74 +142,78 @@ export default function Settings() {
   return (
     <>
       <h2 className="text-2xl font-semibold mb-4">User Settings</h2>
-      {isLoading && 
-      <div className="p-6 bg-gray-100 text-black max-w-6xl mx-auto flex justify-around">
-        <div className="flex-shrink-0 text-center">
-          <div className="relative w-32 h-32 mx-auto mb-4">
-            <Image
-              src={previewUrl || "/default-avatar.png"}
-              alt="Profile"
-              fill
-              className="rounded-full object-cover shadow-md"
-            />
-          </div>
-          <label className="block">
-            <span className="sr-only">Choose profile photo</span>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleFileSelect}
-              className="block w-full text-sm text-slate-500
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-full file:border-0
-                file:text-sm file:font-semibold
-                file:bg-blue-50 file:text-blue-700
-                hover:file:bg-blue-100"
-            />
-          </label>
-          <p className="text-xs text-gray-500 mt-2">Max file size: 5MB</p>
+      {isLoading ? (
+        <div className="flex justify-center items-center h-96">
+          <RingLoader color="#0000ff" size={60} />
         </div>
-
-        {/* User Details */}
-        <div className="flex-grow ml-8">
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Name</label>
-            <input
-              type="text"
-              value={user.name || ""}
-              onChange={(e) => handleChange("name", e.target.value)}
-              className="w-full p-2 border rounded-md mb-3"
-            />
+      ) : (<div className="p-6 bg-gray-100 text-black max-w-6xl mx-auto flex flex-col md:flex-row justify-between">
+          <div className="flex-shrink-0 text-center mb-4 md:mb-0">
+            <div className="relative w-32 h-32 mx-auto mb-4">
+              <Image
+                src={previewUrl || "/default-avatar.png"}
+                alt="Profile"
+                fill
+                className="rounded-full object-cover shadow-md"
+              />
+            </div>
+            <label className="block">
+              <span className="sr-only">Choose profile photo</span>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="block w-full text-sm text-slate-500
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-full file:border-0
+                  file:text-sm file:font-semibold
+                  file:bg-blue-50 file:text-blue-700
+                  hover:file:bg-blue-100"
+              />
+            </label>
+            <p className="text-xs text-gray-500 mt-2">Max file size: 5MB</p>
           </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Email</label>
-            <input
-              type="email"
-              value={user.email || ""}
-              onChange={(e) => handleChange("email", e.target.value)}
-              className="w-full p-2 border rounded-md mb-3"
-            />
+  
+          {/* User Details */}
+          <div className="flex-grow md:ml-8">
+            <div className="mb-4">
+              <label className="block text-sm font-medium">Name</label>
+              <input
+                type="text"
+                value={user.name || ""}
+                onChange={(e) => handleChange("name", e.target.value)}
+                className="w-full p-2 border rounded-md mb-3"
+              />
+            </div>
+  
+            <div className="mb-4">
+              <label className="block text-sm font-medium">Email</label>
+              <input
+                type="email"
+                value={user.email || ""}
+                onChange={(e) => handleChange("email", e.target.value)}
+                className="w-full p-2 border rounded-md mb-3"
+              />
+            </div>
+  
+            <div className="mb-4">
+              <label className="block text-sm font-medium">Phone</label>
+              <input
+                type="tel"
+                value={user.phone || ""}
+                onChange={(e) => handleChange("phone", e.target.value)}
+                className="w-full p-2 border rounded-md mb-3"
+              />
+            </div>
+  
+            <button
+              onClick={handleSaveChanges}
+              className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
+            >
+              Save Changes
+            </button>
           </div>
-
-          <div className="mb-4">
-            <label className="block text-sm font-medium">Phone</label>
-            <input
-              type="tel"
-              value={user.phone || ""}
-              onChange={(e) => handleChange("phone", e.target.value)}
-              className="w-full p-2 border rounded-md mb-3"
-            />
-          </div>
-
-          <button
-            onClick={handleSaveChanges}
-            className="w-full bg-blue-500 text-white p-2 rounded-md hover:bg-blue-600"
-          >
-            Save Changes
-          </button>
         </div>
-      </div>}
+      )}
     </>
   );
 }

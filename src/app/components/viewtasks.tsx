@@ -197,8 +197,8 @@ export default function ViewTasks() {
     }
   };
   return (
-    <div className="flex p-6 bg-gray-100 h-full text-black gap-6">
-      <div className="w-1/3">
+    <div className="flex flex-col lg:flex-row p-6 bg-gray-100 h-full text-black gap-6">
+      <div className="w-full lg:w-1/3">
         <h2 className="text-2xl font-semibold mb-4">Your Tasks</h2>
         <div className="flex gap-2 mb-4">
           <Button
@@ -208,16 +208,14 @@ export default function ViewTasks() {
             <IoMdAdd />
           </Button>
         </div>
-
+  
         <ul className="space-y-2">
           {tasks?.length > 0 ? (
             tasks.map((task) => (
               <li
                 key={task._id}
                 className={`flex justify-between bg-white p-3 rounded-md shadow-md cursor-pointer hover:bg-gray-200 ${
-                  selectedTask?._id === task._id
-                    ? "border-2 border-blue-500"
-                    : ""
+                  selectedTask?._id === task._id ? "border-2 border-blue-500" : ""
                 }`}
                 onClick={() => setSelectedTask(task)}
               >
@@ -238,7 +236,7 @@ export default function ViewTasks() {
           )}
         </ul>
       </div>
-
+  
       {(selectedTask || tasks.length === 0) && (
         <div className="flex-grow p-4 bg-white rounded-md shadow-md">
           {tasks.length === 0 ? (
@@ -251,7 +249,7 @@ export default function ViewTasks() {
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-semibold">Task Details</h2>
                 {editedTask && (
-                  <Button 
+                  <Button
                     onClick={saveTaskChanges}
                     className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white flex items-center"
                   >
@@ -259,7 +257,7 @@ export default function ViewTasks() {
                   </Button>
                 )}
               </div>
-
+  
               <label className="block text-sm font-medium">Title</label>
               <input
                 type="text"
@@ -267,20 +265,20 @@ export default function ViewTasks() {
                 onChange={(e) => {
                   const updatedTask = {
                     ...(editedTask || selectedTask),
-                    title: e.target.value
+                    title: e.target.value,
                   };
                   setEditedTask(updatedTask as Task);
                 }}
                 className="w-full p-2 border rounded-md mb-3"
               />
-
+  
               <label className="block text-sm font-medium">Status</label>
               <select
                 value={editedTask?.status || selectedTask?.status || ""}
                 onChange={(e) => {
                   const updatedTask = {
                     ...(editedTask || selectedTask),
-                    status: e.target.value as Task['status']
+                    status: e.target.value as Task["status"],
                   };
                   setEditedTask(updatedTask as Task);
                 }}
@@ -290,22 +288,22 @@ export default function ViewTasks() {
                 <option value="Ongoing">Ongoing</option>
                 <option value="Completed">Completed</option>
               </select>
-
+  
               <label className="block text-sm font-medium">Description</label>
               <textarea
                 value={editedTask?.description || selectedTask?.description || ""}
                 onChange={(e) => {
                   const updatedTask = {
                     ...(editedTask || selectedTask),
-                    description: e.target.value
+                    description: e.target.value,
                   };
                   setEditedTask(updatedTask as Task);
                 }}
                 className="w-full p-2 border rounded-md mb-3"
                 rows={4}
               />
-
-              <label className="block text-sm font-medium">Task Isdsd   mage</label>
+  
+              <label className="block text-sm font-medium">Task Image</label>
               <input
                 type="file"
                 accept="image/*"
@@ -316,10 +314,10 @@ export default function ViewTasks() {
                 className="w-full p-2 border rounded-md mb-3"
               />
             </>
-            
           )}
         </div>
       )}
+      
       <Dialog open={isAddModalOpen} onOpenChange={setIsAddModalOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
@@ -397,4 +395,4 @@ export default function ViewTasks() {
       </Dialog>
     </div>
   );
-}
+}  

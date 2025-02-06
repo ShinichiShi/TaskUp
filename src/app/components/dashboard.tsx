@@ -39,7 +39,7 @@ function TaskColumn({
   };
 
   return (
-    <div className="w-full md:w-1/3 bg-gray-100 p-4 text-black rounded-lg shadow-md min-h-[400px]">
+    <div className="w-full md:w-1/3 bg-gray-100 p-4 text-black rounded-lg shadow-md min-h-[100px]">
       <h2 className="text-lg font-semibold mb-3 text-center">{status.toUpperCase()}</h2>
       <div className="flex flex-col gap-2">
         {isLoading ? (
